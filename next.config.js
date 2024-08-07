@@ -7,8 +7,8 @@ const withNextra = require("nextra")({
 
 module.exports = withNextra({
   output: 'export',
-  assetPrefix: isProd ? "/aws-workshops/" : "",
-  basePath: isProd ? "/aws-workshops" : "",
+  // assetPrefix: isProd ? "/aws-workshops/" : "",
+  // basePath: isProd ? "/aws-workshops" : "",
   trailingSlash: true,
   images: {
     unoptimized: true,
