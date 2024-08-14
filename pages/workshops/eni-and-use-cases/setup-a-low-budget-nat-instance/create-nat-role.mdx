@@ -1,0 +1,40 @@
+# Create IAM Role for the NAT Instance
+
+The **NAT instance** will have to perform the following actions in its launch process:
+- Disable the **Source/destination check**, which is enabled by default for **EC2 instances**. If not, the **NAT instance** will drop the traffic that is not coming from or going to itself.
+- Attach the **ENI**. The **NAT instance** will use this **ENI** to forward traffic from the private instances to the internet and vice versa.
+
+Therefore, we need to create an **IAM role** and attach it to the **NAT instance** later. This **IAM role** allows the **NAT instance** to perform the actions mentioned above.
+
+1. Open the [IAM console](https://console.aws.amazon.com/iam).
+2. In the sidebar, choose **Roles**.
+3. Choose **Create role**.
+4. Choose `AWS service` as the **Trusted entity type** and select `EC2` as the **Use case**. Choose **Next**.
+    
+    ![Create role 1](/images/eni-and-use-cases/load-balancer-role-1.png)
+
+5. In the **Add permissions** page, search for and select `AmazonEC2FullAccess`. And then choose **Next**.
+    
+    ![Create role 2](/images/eni-and-use-cases/load-balancer-role-2.png)
+
+    Note that the `AmazonEC2FullAccess` policy is used here for demonstration purposes. In a production environment, you should create a custom policy with the minimum required permissions.
+    For example, you can create a custom policy with the following permissions:
+        ```json copy
+        {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": [
+                        "ec2:ModifyInstanceAttribute",
+                        "ec2:ModifyNetworkInterfaceAttribute"
+                    ],
+                    "Resource": "*"
+                }
+            ]
+        }
+        ```
+
+6. In the **Review** page, enter the **Role name** and choose **Create role**.
+
+    ![Create role 3](/images/eni-and-use-cases/load-balancer-role-3.png)

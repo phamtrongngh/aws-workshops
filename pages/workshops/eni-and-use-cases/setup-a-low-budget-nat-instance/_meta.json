@@ -1,0 +1,13 @@
+{
+  "create-a-vpc": "1. Create a VPC",
+  "create-private-security-group": "2. Create the Security Group for the Private Instances",
+  "create-nat-security-group": "3. Create the Security Group for the NAT Instance",
+  "create-nat-role": "4. Create IAM Role for the NAT Instance",
+  "create-an-eni": "5. Create an ENI",
+  "update-private-route-tables": "6. Update Private Route Tables",
+  "create-nat-launch-template": "7. Create Launch Template for the NAT Instance",
+  "launch-nat-instance-with-asg": "8. Launch NAT Instance with Auto Scaling Group",
+  "test-nat-instance": "9. Test the NAT Instance",
+  "clean-up": "10. Clean Up",
+  "conclusion": "11. Conclusion"
+}

@@ -1,0 +1,12 @@
+# Conclusion
+
+Throughout this lab, we have set up a low-budget **NAT instance** which is a cost-effective alternative to the **NAT Gateway** in development and testing environments.
+It has met the requirements of allowing the instances in the private subnets to access the internet through the NAT instance.
+Additionally, the **NAT instance** is automatically recovered if it is terminated (intentionally or unintentionally) due to the **Auto-Scaling Group**.
+
+Although the **NAT instance** is a cost-effective solution, it has some limitations compared to the **NAT Gateway**:
+- **Scalability**: The **NAT instance** does not scale automatically. You need to set up an **Auto-Scaling Group** to ensure that the **NAT instance** is replaced automatically if it is terminated.
+- **Maintenance**: The **NAT instance** requires maintenance, such as patching, monitoring, and replacing the instance if it fails.
+- **Performance**: The **NAT instance** performance depends on the instance type you choose. If you choose a small instance type, it may not handle the traffic efficiently.
+
+Depending on your use case, you may need to consider these limitations and choose the appropriate solution.

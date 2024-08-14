@@ -1,0 +1,26 @@
+## Create a VPC
+
+In this section, you will create a **VPC** with **2 public subnets** and **2 private subnets** across **2 AZs**.
+1. Open the [VPC console](https://console.aws.amazon.com/vpc/).
+2. In the sidebar, choose **Your VPCs**.
+3. Choose **Create VPC**.
+4. In the **VPC settings** section, enter the following information:
+    - **Resources to create**: `VPC and more`. It is a handy option that allows you to create a VPC quickly along with other resources like subnets, route tables, and internet gateways.
+    - **Name tag auto-generation**: Enter your VPC name.
+    - **IPv4 CIDR block**: `10.0.0.0/16`.
+
+        ![VPC settings 1](/images/eni-and-use-cases/vpc-settings-1-1.png)
+
+
+    - **Number of Availability Zones (AZs)**: `2`.
+    - **Number of public subnets**: `2`.
+    - **Number of private subnets**: `2`.
+
+        ![VPC settings 2](/images/eni-and-use-cases/vpc-settings-2.png)
+
+    - **NAT gateway**: `None`, of course, because we are setting up a NAT instance.
+    - **VPC endpoint**: `None`.
+
+        ![VPC settings 3](/images/eni-and-use-cases/vpc-settings-3.png)
+
+5. Choose **Create VPC**.

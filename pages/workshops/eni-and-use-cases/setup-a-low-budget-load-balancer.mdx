@@ -1,0 +1,198 @@
+# Setup a Low-Budget Load Balancer
+
+![Load Balancing](/images/eni-and-use-cases/load-balancing.png)
+
+**Load balancing** is a technique used to distribute incoming network traffic across multiple servers. This technique is commonly used to improve the performance and reliability of applications. 
+When you use a load balancer, you can distribute client requests evenly across multiple upstream servers, which helps to prevent any single server from becoming a bottleneck and ensures that your application remains available and responsive to users.
+You can add or remove servers from the load balancer as needed, which makes it easy to scale your application horizontally.
+Additionally, load balancers can help to improve the security of your application by providing a single point of entry for client requests, which can help to protect your servers from direct exposure to the internet.
+
+The most common and recommended way to implement load balancing on AWS is by using the [Elastic Load Balancing (ELB)](https://aws.amazon.com/elasticloadbalancing/) service. 
+ELB automatically distributes incoming application traffic across multiple targets, such as EC2 instances, containers, and IP addresses. It can handle a large volume of traffic and scale up or down based on demand.
+Since it is a managed service, you don't have to worry about the underlying infrastructure, such as the number of instances, the health of the instances, or the availability of the load balancer itself.
+AWS guarantees the monthly uptime of the load balancer is up to 99.99% - that's less than 1 hour of downtime annually! For more information, see the [AWS Service Level Agreement](https://aws.amazon.com/elasticloadbalancing/sla/).
+
+However, if you are looking for a low-budget solution to implement load balancing that doesn't require a high level of availability, for example, for a development or testing environment, you can utilize the attributes of an Elastic Network Interface (ENI) to create a simple load balancer.
+
+In this lab, we will create a low-budget load balancer using HAProxy that runs on an EC2 instance.
+We will go through the following steps:
+1. Create a VPC where we will deploy our load balancer.
+2. Create an auto-scaling group with a launch configuration that includes a user data script to install and configure HAProxy.
+
+# Steps
+## Step 1: Create a VPC
+
+We will create a VPC as the diagram below:
+![VPC diagram](/images/eni-and-use-cases/vpc-diagram.png)
+
+1. Open the [VPC console](https://console.aws.amazon.com/vpc/).
+2. In the sidebar, choose **Your VPCs**.
+3. Choose **Create VPC**.
+4. In the **VPC settings** section, enter the following information:
+    - **Resources to create**: `VPC and more`. It is a handy option that allows you to create a VPC quickly along with other resources like subnets, route tables, and internet gateways.
+    - **Name tag auto-generation**: Enter your VPC name.
+    - **IPv4 CIDR block**: `10.0.0.0/16`.
+
+        ![VPC settings 1](/images/eni-and-use-cases/vpc-settings-1.png)
+
+
+    - **Number of Availability Zones (AZs)**: `2`.
+    - **Number of public subnets**: `2`.
+    - **Number of private subnets**: `2`.
+
+        ![VPC settings 2](/images/eni-and-use-cases/vpc-settings-2.png)
+
+    - **NAT gateway**: `None`. We temporarily disable the NAT gateway to reduce the cost of the lab.
+    - **VPC endpoint**: `None`.
+
+        ![VPC settings 3](/images/eni-and-use-cases/vpc-settings-3.png)
+
+5. Choose **Create VPC**.
+
+## Step 2: Create the security groups for the load balancer instance
+1. In the VPC console, choose **Security Groups** in the sidebar.
+2. Choose **Create security group**.
+3. In the **Create security group** wizard, enter the following information:
+    - **Security group name**: Enter a name for your security group.
+    - **Description**: Enter a description for your security group.
+    - **VPC**: Select the VPC you created in the previous step.
+        ![Security group 1](/images/eni-and-use-cases/security-group-1.png)
+
+    - **Inbound rules**: Add the following inbound rules:
+        - **Type**: `HTTP`.
+        - **Source**: `Anywhere`.
+    - **Outbound rules**: Add the following outbound rules:
+        - **Type**: `All traffic`.
+        - **Destination**: `Anywhere`.
+
+        ![Security group 2](/images/eni-and-use-cases/security-group-2.png)
+
+4. Choose **Create security group**.
+
+## Step 3: Create the security group for the web server instances
+1. Choose **Create security group**.
+2. In the **Create security group** wizard, enter the following information:
+    - **Security group name**: Enter a name for your security group.
+    - **Description**: Enter a description for your security group.
+    - **VPC**: Select the VPC you created in the previous step.
+        ![Security group 3](/images/eni-and-use-cases/security-group-3.png)
+    
+    - **Inbound rules**: Add the following inbound rules:
+        - **Type**: `HTTP`.
+        - **Source**: Select the load balancer security group you created earlier.
+    - **Outbound rules**: Add the following outbound rules:
+        - **Type**: `All traffic`.
+        - **Destination**: `Anywhere`.
+        ![Security group 4](/images/eni-and-use-cases/security-group-4.png)
+
+3. Choose **Create security group**.
+
+## Step 4: Create an Elastic IP addresses for the load balancer instances
+> Note that you will be charged 0.005 USD per hour for each Elastic IP address that is allocated regardless of whether it is associated with an instance or not. Check it out [here](https://aws.amazon.com/vpc/pricing/).
+
+1. Open the [VPC console](https://console.aws.amazon.com/vpc/).
+2. In the sidebar, choose **Elastic IPs**.
+3. Choose **Allocate Elastic IP address**.
+4. Choose **Allocate**.
+
+Now you have an Elastic IP address that you can associate with the load balancer instances later.
+
+## Step 5: Create role for the load balancer instances
+To allow the load balancer instances to associate the Elastic IP address, we need to create a role with the necessary permissions.
+1. Open the [IAM console](https://console.aws.amazon.com/iam).
+2. In the sidebar, choose **Roles**.
+3. Choose **Create role**.
+4. In the **Create role** wizard, choose **EC2** as the service that will use this role. And then choose **Next**.
+    
+    ![Create role 1](/images/eni-and-use-cases/load-balancer-role-1.png)
+
+5. In the **Attach permissions policies** page, search for and select `AmazonEC2FullAccess`. And then choose **Next**.
+    
+    ![Create role 2](/images/eni-and-use-cases/load-balancer-role-2.png)
+
+6. In the **Review** page, enter the **Role name** and choose **Create role**.
+
+    ![Create role 3](/images/eni-and-use-cases/load-balancer-role-3.png)
+
+> Note that the `AmazonEC2FullAccess` policy is used here for demonstration purposes. In a production environment, you should create a custom policy with the minimum required permissions.
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+        "Effect": "Allow",
+        "Action": [
+            "ec2:AssociateAddress",
+            "ec2:DescribeAddresses"
+        ],
+        "Resource": "*"
+        }
+    ]
+}
+```
+
+## Step 2: Create a launch template for the load balancer instances
+1. Open the [EC2 console](https://console.aws.amazon.com/ec2/).
+2. In the sidebar, choose **Instances > Launch Templates**.
+3. Choose **Create launch template**.
+4. In the **Create launch template** wizard, enter the following information:
+    - **Launch template name**: Enter a name for your launch template. 
+    - **Auto Scaling guidance**: Tick the box to enable the auto-scaling guidance.
+    
+        ![Launch template 1](/images/eni-and-use-cases/launch-template-1.png)
+    
+    - **Application and OS Images (Amazon Machine Image)**: choose **Quick Start** and select the latest **Amazon Linux 2023 AMI**.
+
+        ![Launch template 2](/images/eni-and-use-cases/launch-template-2.png)
+    
+    - **Instance type**: Choose `t2.micro`, which is eligible for the AWS Free Tier.
+    - **Key pair (login)**: Choose your key pair. If you don't have one, you can **Create new key pair**.
+
+        ![Launch template 3](/images/eni-and-use-cases/launch-template-3.png)
+
+    - **Network settings**: Choose the load balancer security group you created earlier as the **Common security groups**.
+
+        ![Launch template 4](/images/eni-and-use-cases/launch-template-4.png)
+
+
+    - **Advanced details**: 
+        - **IAM instance profile**: Choose the role you created earlier.
+            
+            ![Launch template 5](/images/eni-and-use-cases/launch-template-5.png)
+
+        - **Use data**: paste the following script to install and configure **HAProxy**. Replace `<INSTANCE1_IP>` and `<INSTANCE2_IP>` with the private IP addresses of the instances you will create later.
+            ```bash copy
+            #!/bin/bash
+            yum update -y
+            yum install -y haproxy
+
+            # Attach the Elastic IP address to the instance
+            export INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+            aws ec2 associate-address --instance-id $INSTANCE_ID --allocation-id <EIP_ALLOCATION_ID>
+
+            cat <<EOF > /etc/haproxy/haproxy.cfg
+            frontend http_front
+            bind *:80
+            default_backend http_back
+            backend http_back
+                balance roundrobin
+                server server1 <INSTANCE1_IP>:80 check
+                server server2 <INSTANCE2_IP>:80 check
+            EOF
+
+            systemctl enable haproxy
+            systemctl start haproxy
+            ```
+    
+4. Choose **Create launch template**.
+
+## Step 3: Create an auto-scaling group for the load balancer instance
+1. In the EC2 console, choose **Auto Scaling Groups** in the sidebar.
+2. Choose **Create Auto Scaling group**.
+3. Enter **Auto Scaling group name** and the **Launch template** you created earlier. And then choose **Next**.
+    ![Auto Scaling group 1](/images/eni-and-use-cases/auto-scaling-1.png)
+
+4. Choose the **VPC** you created earlier and select the **Public subnets**. And then choose **Next**.
+    ![Auto Scaling group 2](/images/eni-and-use-cases/auto-scaling-2.png)
+
+5. Keep choose **Next** until you reach the **Review** page. Review the settings and choose **Create Auto Scaling group**.

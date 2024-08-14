@@ -1,7 +1,7 @@
 {
   "index": "Introduction",
-  "prerequisites": "Prerequisites",
-  "another": "Another Page",
+  "overview": "Overview",
+  "before-you-start": "Before You Start",
   "workshops": "Workshops",
   "contact": {
     "title": "Contact ↗",

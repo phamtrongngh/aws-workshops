@@ -1,0 +1,86 @@
+# Test the NAT instance
+
+## Create an EC2 Instance in the Private Subnet
+
+Now that you have set up the **NAT instance**, we can test it by launching an **EC2 instance** in the **private subnet** and verifying that it can access the internet through the **NAT instance**.
+
+1. Open the [EC2 console](https://console.aws.amazon.com/ec2/).
+2. In the sidebar, choose **Instances**.
+3. Choose **Launch instances**.
+4. In the **Amazon Machine Image (AMI)**, choose **Quick Start** and **Amazon Linux 2023 AMI**.
+    ![](/images/eni-and-use-cases/launch-template-2.png)
+5. Choose `t2.micro` as the **Instance type** which is eligible for the [AWS Free Tier](https://aws.amazon.com/free/).
+6. Choose **Key pair** for SSH access to the instance. We should use the same key pair as the **NAT instance** for **SSH agent forwarding** in the next step.
+    ![](/images/eni-and-use-cases/launch-template-3.png)
+
+7. In the **Network settings**, select the **VPC** we created earlier and choose one of the **private subnets**. Then choose the **security group** you created earlier for the **private instance**.
+    ![](/images/eni-and-use-cases/launch-instance.png)
+
+8. Choose **Launch instance**.
+
+## SSH Agent Forwarding to NAT Instance
+
+To test the **NAT instance**, we need to SSH into the **private instance** through the **NAT instance**. 
+Instead of copying the private key to the **NAT instance**, which is not recommended for security reasons, we will use **SSH agent forwarding**.
+
+1. Open a terminal on your local machine.
+2. Run the following command to enable SSH agent forwarding:
+    ```bash copy
+    ssh-add -K /path/to/your/private-key.pem
+    ssh -A ec2-user@<NAT-INSTANCE-PUBLIC-IP>
+    ```
+    Replace `/path/to/your/private-key.pem` with the path to your private key and `<NAT-INSTANCE-PUBLIC-IP>` with the **public IP address** of the **NAT instance** which you can find in the **EC2 console**.
+    
+    In my case, the key is located at `~/.ssh/benlab.pem` and the **public IP address** of the **NAT instance** is `18.209.95.90`. So, the command will be:
+    ```bash copy
+    ssh-add -K ~/.ssh/benlab.pem
+    ssh -A ec2-user@18.209.95.90
+    ```
+
+3. Once you are connected to the **NAT instance**, you can SSH into the **private instance** using the **private IP address**:
+    ```bash copy
+    ssh ec2-user@<PRIVATE-INSTANCE-PRIVATE-IP>
+    ```
+    Replace `<PRIVATE-INSTANCE-PRIVATE-IP>` with the **private IP address** of the **private instance** which you can find in the **EC2 console**.
+    In my case, the private IP address of the **private instance** is `10.0.157.135`. So, the command will be:
+    ```bash copy
+    ssh ec2-user@10.0.157.135
+    ```
+
+4. You should now be connected to the **private instance** through the **NAT instance**.
+
+## Test Internet Connectivity
+
+Now that you are connected to the **private instance**, we will run some commands to test the internet connectivity.
+
+1. Ping to **google.com**:
+    ```bash copy
+    ping -c 4 google.com
+    ```
+    You should see the ping responses from **google.com**.
+
+2. Get the public IP address:
+    ```bash copy
+    curl ipv4.icanhazip.com
+    ```
+    You should see the **public IP address** of the **NAT instance**. This confirms that the **private instance** is using the **NAT instance** to access the internet.
+
+## Test the NAT Instance Recovery
+
+Since the **NAT instance** is launched in the **Auto-Scaling Group**, it will be automatically recovered if the instance is terminated (intentionally or unintentionally).
+We will test this by terminating the **NAT instance** and verifying that a new **NAT instance** is launched in its place.
+
+#### Terminate the NAT Instance
+1. Open the [EC2 console](https://console.aws.amazon.com/ec2/).
+2. In the sidebar, choose **Instances**.
+3. Select the **NAT instance**.
+4. Choose **Instance State > Terminate instance**.
+5. Choose **Terminate** in the confirmation dialog.
+
+#### Verify the Recovery
+Now you can see that the **NAT instance** is terminated. And after a few minutes, a new **NAT instance** will be launched and configured automatically. 
+You can verify this by checking the **EC2 console**.
+
+![](/images/eni-and-use-cases/instance-recovery.png)
+
+You can SSH into the **private instance** again and test the internet connectivity, as we did earlier. It should work without any issues.

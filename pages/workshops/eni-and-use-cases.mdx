@@ -1,0 +1,36 @@
+# Elastic Network Interface (ENI) and Use Cases
+
+![Cover](/images/eni-and-use-cases/cover.jpeg)
+
+## What is Elastic Network Interface (ENI)?
+
+> An elastic network interface is a logical networking component in a VPC that represents a virtual network card. You can create and configure network interfaces and attach them to instances that you launch in the same Availability Zone. - [AWS Documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-eni.html)
+
+Have you seen a network interface before? If you have ever set up a computer, you might have seen a **Network Interface Card (NIC)** that you plug into your computer to connect to the internet and other devices.
+
+![Physical Network Interface](/images/eni-and-use-cases/physical-network-interface.png)
+
+In AWS, **Elastic Network Interfaces (ENIs)** are the virtual equivalent of physical network interfaces.
+You can think of an **ENI** as a virtual network card that you can attach to an **EC2 instance**, a little like how you would attach a physical network card to a computer. **ENIs** are used for connecting your instances to the internet, other instances, and other AWS services.
+
+An **ENI** has the following attributes:
+- A **primary private IPv4** address and one or more **secondary private IPv4 addresses**
+- One **Elastic IP address** per **private IPv4 address**
+- One **public IPv4 address**
+- One or more **IPv6 addresses**
+- One or more **security groups**
+- A **MAC address**
+
+Since **ENIs** are separate from instances, they can be managed independently and have their own lifecycle.
+You can attach and detach **ENIs** from instances as needed. This allows you to move an **ENI** between instances, which can be useful for scenarios and use cases where you need to change the network configuration of an instance.
+
+## Use Cases
+
+From the attributes above, we can see that **ENIs** are versatile and can be used in various scenarios.
+In this workshop, we will explore some use cases for **Elastic Network Interfaces (ENIs)** applied to real-world scenarios and step-by-step guides on how to set them up through hands-on labs.
+
+1. [Setup a Low-budget NAT Instance](/workshops/eni-and-use-cases/setup-a-low-budget-nat-instance)
+2. **Setup a Low-budget Load Balancer** (coming soon)
+3. **Setup a Dual-homed Instance** (coming soon)
+
+

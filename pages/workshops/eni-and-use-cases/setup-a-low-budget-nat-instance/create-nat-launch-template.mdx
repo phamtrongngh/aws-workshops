@@ -1,0 +1,65 @@
+# Create Launch Template for the NAT Instance
+
+As mentioned earlier, the **NAT instance** will be set up in an **Auto-Scaling Group.**
+Therefore, we need to create a **launch template** for launching the **NAT instance** later.
+
+1. Open the [EC2 console](https://console.aws.amazon.com/ec2/).
+2. In the sidebar, choose **Instances > Launch Templates**.
+3. Choose **Create launch template**.
+4. In the **Create launch template** wizard, enter **Launch template name** and tick the checkbox for **Auto Scaling guidance**.
+
+    ![Launch template 1](/images/eni-and-use-cases/launch-template-6.png)
+    
+5. In **Application and OS Images (Amazon Machine Image)** section, choose **Quick Start** and select the latest **Amazon Linux 2023 AMI**.
+
+    ![Launch template 2](/images/eni-and-use-cases/launch-template-2.png)
+    
+6. Choose `t2.micro` as **Instance type**, which is eligible for the [AWS Free Tier](https://aws.amazon.com/free/). You can choose a different instance type based on your system requirements.
+7. Choose the **Key pair** for connecting to the **NAT instance** later. If you don't have a key pair, you can create one by choosing **Create new key pair**.
+
+    ![Launch template 3](/images/eni-and-use-cases/launch-template-3.png)
+
+8. In the **Network settings**, choose the **Security group** you created earlier for the **NAT instance**.
+
+    ![Launch template 4](/images/eni-and-use-cases/launch-template-7.png)
+
+9. In **Advanced network configuration**, choose **Add network interface** and enable **Auto-assign public IP**.
+
+    ![Launch template 9](/images/eni-and-use-cases/launch-template-8.png)
+
+
+10. In **Advanced details** section, choose the **IAM role** you created in the [previous step](/workshops/eni-and-use-cases/setup-a-low-budget-nat-instance/create-nat-role.mdx) as the **IAM instance profile**.
+    ![Launch template 5](/images/eni-and-use-cases/launch-template-5.png)
+
+11. **Copy** the following script and paste it in the **User data** section. This script will attach the **ENI** to the instance, disable source/destination check, install and configure **iptables** for **NAT**.
+```bash copy showLineNumbers /Values=nat-eni/
+#!/bin/bash
+yum update -y
+
+# Get the instance ID
+TOKEN=$(curl -X PUT http://169.254.169.254/latest/api/token -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id -H "X-aws-ec2-metadata-token: $TOKEN")
+
+# Attach the ENI to the instance
+ENI_ID=$(aws ec2 describe-network-interfaces --filters "Name=tag:Name,Values=nat-eni" --query 'NetworkInterfaces[*].NetworkInterfaceId' --output text)
+aws ec2 attach-network-interface --network-interface-id ${ENI_ID} --instance-id $INSTANCE_ID --device-index 1
+
+# Disable source/destination check for two interfaces of the instance
+ENI_IDS=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query "Reservations[*].Instances[*].NetworkInterfaces[*].NetworkInterfaceId" --output text)
+for ENI_ID in $ENI_IDS; do
+    aws ec2 modify-network-interface-attribute --network-interface-id $ENI_ID --no-source-dest-check
+done
+
+# Install iptables, enable IP forwarding, and configure iptables
+yum install iptables-services -y
+systemctl enable iptables
+systemctl start iptables
+echo "net.ipv4.ip_forward = 1" > /etc/sysctl.d/custom-ip-forwarding.conf
+sysctl -p /etc/sysctl.d/custom-ip-forwarding.conf
+/sbin/iptables -t nat -A POSTROUTING -o enX0 -j MASQUERADE
+/sbin/iptables -F FORWARD
+service iptables save
+```
+> **IMPORTANT**: If in the step [5. Create an ENI](/workshops/eni-and-use-cases/setup-a-low-budget-nat-instance/create-an-eni.mdx), you used a different value for the **Name** tag, replace `nat-eni` with the value you used in line **9**.
+    
+12. Choose **Create launch template**.

@@ -1,0 +1,17 @@
+# Launch NAT Instance with Auto Scaling Group
+
+We have already created all the necessary resources to set up a **NAT instance**. 
+Now, we will launch the **NAT instance** using an **Auto-Scaling Group.**
+
+1. Open the [EC2 console](https://console.aws.amazon.com/ec2/).
+2. In the sidebar, choose **Auto Scaling Groups**.
+3. Choose **Create Auto Scaling group**.
+4. Enter **Auto Scaling group name** and choose the **Launch template** you created earlier. Choose **Next**.
+
+    ![Create ASG 1](/images/eni-and-use-cases/create-asg-1.png)
+
+5. In the **Network** section, choose the **VPC** and the **Subnet** where the **ENI** is created in the previous step. Choose **Next**.
+
+    ![Create ASG 2](/images/eni-and-use-cases/create-asg-2.png)
+
+6. Keep choosing **Next** until you reach the **Review** page. Choose **Create Auto Scaling group**.

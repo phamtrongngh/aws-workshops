@@ -1,0 +1,21 @@
+# Update Private Route Tables
+
+We have two **route tables**, one for each **private subnet**. For now, these **route tables** just have a local route.
+
+![Route tables](/images/eni-and-use-cases/private-route-table-2.png)
+
+We need to add them another route that points to the **ENI** that will be attached to the **NAT instance**.
+
+1. Open the [VPC console](https://console.aws.amazon.com/vpc/).
+2. In the sidebar, choose **Route Tables**.
+3. Select the **route table** associated with the first **private subnet**.
+4. Choose the **Routes** tab and then **Edit routes**.
+5. Choose **Add route**.
+6. In the **Destination** field, enter `0.0.0.0/0`.
+7. In the **Target** field, choose **Network Interface** and select the **Network Interface ID** we created in the previous step.
+8. Choose **Save changes**.
+
+    ![Add route](/images/eni-and-use-cases/private-route-table.png)
+
+Repeat the same steps for the **route table** associated with the second **private subnet**.
+

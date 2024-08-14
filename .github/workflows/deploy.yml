@@ -19,6 +19,9 @@ jobs:
       - name: Build & Export
         run: npm run export
 
+      - name: Setup custom domain
+        run: echo 'benlab.fun' > ./out/CNAME
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:

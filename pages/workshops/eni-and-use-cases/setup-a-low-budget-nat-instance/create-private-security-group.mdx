@@ -1,0 +1,23 @@
+# Create the Security Group for Private Instances
+
+In this section, we will create a **security group** for the **private instances**. This **security group** allows inbound traffic from local network and outbound traffic to everywhere.
+
+1. In the **VPC console**, choose **Security Groups** in the sidebar.
+2. Choose **Create security group**.
+3. Enter **Security group name**, **Description** and select the **VPC** you created in the previous step.
+    ![](/images/eni-and-use-cases/security-group-7.png)
+    
+4. Add one inbound rule with the following settings:
+    - **Type**: `All traffic`.
+    - **Source**: `10.0.0.0/16`.
+
+5. Add one outbound rule with the following settings:
+    - **Type**: `All traffic`.
+    - **Destination**: `0.0.0.0/0` (everywhere).
+        
+    ![](/images/eni-and-use-cases/security-group-8.png)
+
+    > Note: For simplicity, we allow all traffic in local network to the private instances. In a production environment, you should restrict it to only the necessary ports and sources.
+
+6. Choose **Create security group**.
+

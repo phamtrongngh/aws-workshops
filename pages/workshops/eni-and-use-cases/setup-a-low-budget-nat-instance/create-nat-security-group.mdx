@@ -1,0 +1,29 @@
+# Create the Security Group for the NAT Instance
+
+We need to create a **security group** for the **NAT instance**. This **security group** allows inbound traffic from the **private instances** and outbound traffic to everywhere.
+We also allow SSH access to the NAT instance for testing purposes.
+
+1. In the **VPC console**, choose **Security Groups** in the sidebar.
+2. Choose **Create security group**.
+3. Enter **Security group name**, **Description** and select the **VPC** you created in the previous step.
+    ![](/images/eni-and-use-cases/security-group-9.png)
+    
+4. Add the following **inbound rules**:
+    - **The first rule**:
+        - **Type**: `All traffic`. 
+        - **Source**: Select the **private security group** you created in the previous step.
+    
+    - **The second rule**:
+        - **Type**: `SSH`. 
+        - **Source**: `0.0.0.0/0` (everywhere). Or you can specify your IP address for security reasons.
+
+        > Note: The second inbound rule allows SSH access to the NAT instance from anywhere for testing purposes. You can restrict it to your IP address for security reasons.
+
+5. Add this **outbound rule**:
+    - **Type**: `All traffic`.
+    - **Destination**: `0.0.0.0/0` (everywhere).
+        
+    ![](/images/eni-and-use-cases/nat-sg-2.png)
+
+6. Choose **Create security group**.
+
